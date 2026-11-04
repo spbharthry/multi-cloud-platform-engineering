@@ -1,0 +1,53 @@
+name: Terraform validation and security
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+      - 'scripts/**'
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+      - 'scripts/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    name: Validate ${{ matrix.cloud }} dev
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: [aws, azure, gcp]
+    defaults:
+      run:
+        working-directory: terraform/environments/dev/${{ matrix.cloud }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.17.1'
+      - name: Check formatting (entire Terraform tree)
+        working-directory: .
+        run: terraform fmt -check -recursive terraform/
+      - name: Initialize without remote backend
+        run: terraform init -backend=false -input=false -no-color
+      - name: Validate without cloud deployment
+        run: terraform validate -no-color
+  checkov:
+    name: Checkov security review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Checkov (advisory baseline)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          quiet: true
+          soft_fail: true
+          output_format: cli
+          # Advisory initially: review findings, fix them and remove soft_fail before protecting main.

@@ -1,0 +1,11 @@
+# Add these lines to existing root .gitignore if missing (do not replace existing file):
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+*.tfplan
+# Do NOT ignore .terraform.lock.hcl; commit reviewed provider locks.
